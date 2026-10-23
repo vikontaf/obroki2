@@ -34,11 +34,18 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
     val themeMode: StateFlow<AppThemeMode> = themePrefs.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppThemeMode.SYSTEM)
 
+    val tutorialShown: StateFlow<Boolean> = themePrefs.tutorialShown
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
     private val _message = MutableStateFlow<UiMessage?>(null)
     val message: StateFlow<UiMessage?> = _message.asStateFlow()
 
     fun clearMessage() {
         _message.value = null
+    }
+
+    fun markTutorialShown() {
+        viewModelScope.launch { themePrefs.setTutorialShown() }
     }
 
     fun createPayment(

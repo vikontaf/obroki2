@@ -69,6 +69,7 @@ private sealed class DialogState {
 fun MainScreen(viewModel: PaymentsViewModel) {
     val payments by viewModel.payments.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val tutorialShown by viewModel.tutorialShown.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
 
     var dialog by remember { mutableStateOf<DialogState>(DialogState.None) }
@@ -82,6 +83,13 @@ fun MainScreen(viewModel: PaymentsViewModel) {
         val msg = message ?: return@LaunchedEffect
         snackbar.showSnackbar(msg.text)
         viewModel.clearMessage()
+    }
+
+    LaunchedEffect(tutorialShown) {
+        if (!tutorialShown) {
+            dialog = DialogState.Tutorial
+            viewModel.markTutorialShown()
+        }
     }
 
     Scaffold(
@@ -249,7 +257,12 @@ fun MainScreen(viewModel: PaymentsViewModel) {
             today = today,
             onDismiss = { dialog = DialogState.None },
         )
-        DialogState.Tutorial -> TutorialDialog(onDismiss = { dialog = DialogState.None })
+        DialogState.Tutorial -> TutorialDialog(
+            onDismiss = {
+                viewModel.markTutorialShown()
+                dialog = DialogState.None
+            },
+        )
         DialogState.Donate -> DonateStubDialog(onDismiss = { dialog = DialogState.None })
         is DialogState.ItemActions -> ItemActionsDialog(
             item = d.item,

@@ -113,4 +113,10 @@ class SumToPayTest {
         assertEquals(LocalDate.of(2026, 10, 23), from)
         assertEquals(LocalDate.of(2026, 11, 22), to)
     }
+
+    @Test
+    fun formatMoney_includesRubleSign() {
+        assertEquals("1234 ₽", SumToPay.formatMoney(1234.0))
+        assertEquals("12.50 ₽", SumToPay.formatMoney(12.5))
+    }
 }

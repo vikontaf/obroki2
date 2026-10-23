@@ -2,6 +2,7 @@ package ru.obroki.app.domain
 
 import java.time.LocalDate
 import java.time.YearMonth
+import java.util.Locale
 
 data class ActiveSeries(
     val title: String,
@@ -154,10 +155,11 @@ object SumToPay {
     }
 
     fun formatMoney(value: Double): String {
-        return if (value == value.toLong().toDouble()) {
+        val number = if (value == value.toLong().toDouble()) {
             value.toLong().toString()
         } else {
-            String.format("%.2f", value)
+            String.format(Locale.US, "%.2f", value)
         }
+        return "$number ₽"
     }
 }

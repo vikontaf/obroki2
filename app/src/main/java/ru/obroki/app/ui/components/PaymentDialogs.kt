@@ -4,7 +4,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -208,21 +211,29 @@ fun ConfirmDeleteDialog(
 
 @Composable
 fun TutorialDialog(onDismiss: () -> Unit) {
+    val scroll = rememberScrollState()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Инструкция") },
         text = {
-            Text(
-                """
-                • Короткое нажатие — отметить оплату. Появится платёж на следующий месяц (если нет дубликата и остаток к оплате не исчерпан).
-                • Повторное нажатие на уже отмеченный (оплаченный) пункт возвращает его в неоплаченные; уже созданный платёж на следующий месяц при этом не удаляется.
-                • Долгое нажатие — изменить сумму / остаток к оплате или удалить.
-                • Календарь — текущий месяц: сегодня и дни с платежами (цвета как в списке).
-                • «Сумма к оплате» — сколько осталось заплатить за выбранный период (включая будущие месяцы).
-                • Очистка — удаляет оплаченные платежи прошлых месяцев.
-                • Цвета: зелёный — оплачен, красный — просрочен, жёлтый — меньше 7 дней.
-                """.trimIndent()
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 360.dp)
+                    .verticalScroll(scroll),
+            ) {
+                Text(
+                    """
+                    • Короткое нажатие — отметить оплату. Появится платёж на следующий месяц (если нет дубликата и остаток к оплате не исчерпан).
+                    • Повторное нажатие на уже отмеченный (оплаченный) пункт возвращает его в неоплаченные; уже созданный платёж на следующий месяц при этом не удаляется.
+                    • Долгое нажатие — изменить сумму / остаток к оплате или удалить.
+                    • Календарь — текущий месяц: сегодня и дни с платежами (цвета как в списке).
+                    • «Сумма к оплате» — сколько осталось заплатить за выбранный период (включая будущие месяцы).
+                    • Очистка — удаляет оплаченные платежи прошлых месяцев.
+                    • Цвета: зелёный — оплачен, красный — просрочен, жёлтый — меньше 7 дней.
+                    """.trimIndent()
+                )
+            }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("Понятно") }
