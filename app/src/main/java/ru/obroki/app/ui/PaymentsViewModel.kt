@@ -47,9 +47,10 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
         amount: Double,
         debt: Double?,
         dueDay: Int,
-        year: Int = YearMonth.now().year,
-        month: Int = YearMonth.now().monthValue,
+        today: LocalDate = LocalDate.now(),
     ) {
+        val day = dueDay.coerceIn(1, 31)
+        val ym = PaymentDates.createYearMonth(day, today)
         viewModelScope.launch {
             repo.create(
                 PaymentItem(
@@ -57,9 +58,9 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
                     payee = payee.trim(),
                     amount = amount,
                     debt = debt,
-                    dueDay = dueDay.coerceIn(1, 31),
-                    dueYear = year,
-                    dueMonth = month,
+                    dueDay = day,
+                    dueYear = ym.year,
+                    dueMonth = ym.monthValue,
                     isPaid = false,
                 )
             )

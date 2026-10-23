@@ -19,6 +19,17 @@ object PaymentDates {
         return next.year to next.monthValue
     }
 
+    /**
+     * Year/month for a newly created payment with the given day-of-month.
+     * If [dueDay] is already past in the calendar month of [today] (strictly less
+     * than today's day), schedule in the next month; otherwise keep the current month.
+     * Day-of-month rollover for short months is handled by [effectiveDate].
+     */
+    fun createYearMonth(dueDay: Int, today: LocalDate = LocalDate.now()): YearMonth {
+        val current = YearMonth.from(today)
+        return if (dueDay < today.dayOfMonth) current.plusMonths(1) else current
+    }
+
     fun daysUntil(from: LocalDate, to: LocalDate): Long =
         java.time.temporal.ChronoUnit.DAYS.between(from, to)
 
