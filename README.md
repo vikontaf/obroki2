@@ -2,6 +2,8 @@
 
 Лёгкое Android-приложение для учёта ежемесячных платежей: отметить оплату → при необходимости клон на следующий месяц (с опциональным остатком к оплате).
 
+**Репозиторий:** [github.com/vikontaf/obroki2](https://github.com/vikontaf/obroki2)
+
 **Автор:** Alexey Firsov
 
 **Стек:** Kotlin, одна Activity, Jetpack Compose, Room, DataStore Preferences. Без сети и аккаунтов.
