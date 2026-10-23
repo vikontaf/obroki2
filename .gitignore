@@ -19,3 +19,8 @@ out/
 .navigation/
 *.log
 .kotlin/
+
+# Release signing — never commit secrets or keystore files
+keystore.properties
+*.jks
+*.keystore

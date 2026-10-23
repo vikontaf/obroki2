@@ -22,6 +22,42 @@
 ./gradlew :app:testDebugUnitTest
 ```
 
+## Release APK для RuStore
+
+Первый upload в [RuStore](https://www.rustore.ru/) удобнее делать **подписанным release APK** (AAB — позже, если понадобится).
+
+**Package name / `applicationId`:** `ru.obroki.app` — при создании приложения в [RuStore Консоль](https://console.rustore.ru/) укажите тот же идентификатор; он должен быть уникален в магазине.
+
+**Версия:** `versionName` `1.0.0`, `versionCode` `1` (каждый апдейт — больший `versionCode`).
+
+### 1. Создать release keystore (один раз, локально)
+
+В корне репозитория (или в безопасном месте вне git):
+
+```bash
+keytool -genkey -v -keystore obroki-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias obroki
+```
+
+Храните `.jks` и пароли **вне git** (бэкап отдельно). Файлы `*.jks`, `*.keystore` и `keystore.properties` в `.gitignore`.
+
+### 2. Заполнить `keystore.properties`
+
+```bash
+cp keystore.properties.example keystore.properties
+```
+
+Укажите путь к keystore (относительно корня проекта), alias и пароли. Пример — в `keystore.properties.example`.
+
+### 3. Собрать подписанный APK
+
+```bash
+./gradlew.bat :app:assembleRelease
+```
+
+APK: `app/build/outputs/apk/release/app-release.apk`. Без `keystore.properties` release-сборка не будет подписана вашим ключом — для RuStore нужен подписанный APK.
+
+Автор: Alexey Firsov. Keystore создаёт и хранит владелец проекта локально; секреты в репозиторий не коммитятся.
+
 ## Требования
 
 - minSdk 26, targetSdk / compileSdk 35
