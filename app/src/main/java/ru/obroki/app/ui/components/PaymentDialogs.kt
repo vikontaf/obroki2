@@ -65,7 +65,7 @@ fun CreatePaymentDialog(
                 OutlinedTextField(
                     value = debtText,
                     onValueChange = { debtText = it },
-                    label = { Text("Остаток долга (необязательно)") },
+                    label = { Text("Остаток к оплате (необязательно)") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
@@ -94,7 +94,7 @@ fun CreatePaymentDialog(
                     title.isBlank() -> error = "Укажите название"
                     payee.isBlank() -> error = "Укажите получателя"
                     amount == null || amount <= 0 -> error = "Сумма должна быть больше 0"
-                    debtText.isNotBlank() && (debt == null || debt < 0) -> error = "Некорректный долг"
+                    debtText.isNotBlank() && (debt == null || debt < 0) -> error = "Некорректный остаток к оплате"
                     day == null || day !in 1..31 -> error = "День месяца: 1–31"
                     else -> onSave(title, payee, amount, debt, day)
                 }
@@ -135,7 +135,7 @@ fun EditPaymentDialog(
                 OutlinedTextField(
                     value = debtText,
                     onValueChange = { debtText = it },
-                    label = { Text("Остаток долга (пусто = не задан)") },
+                    label = { Text("Остаток к оплате (пусто = не задан)") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
@@ -153,7 +153,7 @@ fun EditPaymentDialog(
                 val debt = if (debtRaw.isEmpty()) null else debtRaw.replace(',', '.').toDoubleOrNull()
                 when {
                     amount == null || amount <= 0 -> error = "Сумма должна быть больше 0"
-                    debtRaw.isNotEmpty() && (debt == null || debt < 0) -> error = "Некорректный долг"
+                    debtRaw.isNotEmpty() && (debt == null || debt < 0) -> error = "Некорректный остаток к оплате"
                     else -> onSave(amount, debt)
                 }
             }) { Text("Сохранить") }
@@ -210,13 +210,14 @@ fun ConfirmDeleteDialog(
 fun TutorialDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Как пользоваться") },
+        title = { Text("Инструкция") },
         text = {
             Text(
                 """
-                • Короткое нажатие — отметить оплату. Появится платёж на следующий месяц (если нет дубликата и долг не исчерпан).
-                • Долгое нажатие — изменить сумму/долг или удалить.
-                • Календарь — текущий месяц: сегодня и дни с платежами.
+                • Короткое нажатие — отметить оплату. Появится платёж на следующий месяц (если нет дубликата и остаток к оплате не исчерпан).
+                • Повторное нажатие на уже отмеченный (оплаченный) пункт возвращает его в неоплаченные; уже созданный платёж на следующий месяц при этом не удаляется.
+                • Долгое нажатие — изменить сумму / остаток к оплате или удалить.
+                • Календарь — текущий месяц: сегодня и дни с платежами (цвета как в списке).
                 • «Сумма к оплате» — сколько осталось заплатить за выбранный период (включая будущие месяцы).
                 • Очистка — удаляет оплаченные платежи прошлых месяцев.
                 • Цвета: зелёный — оплачен, красный — просрочен, жёлтый — меньше 7 дней.
@@ -235,7 +236,7 @@ fun DonateStubDialog(onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text("Благодарность разработчику") },
         text = {
-            Text("Спасибо за интерес к приложению «Оброки»! Ссылка на донат появится в одной из следующих версий.")
+            Text("Спасибо за интерес к приложению «Оброки2»! Ссылка на донат появится в одной из следующих версий.")
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("Закрыть") }

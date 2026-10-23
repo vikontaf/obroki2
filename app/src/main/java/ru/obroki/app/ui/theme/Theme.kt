@@ -8,9 +8,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import ru.obroki.app.domain.AppThemeMode
 
-private val PaidGreen = Color(0xFF2E7D32)
-private val OverdueRed = Color(0xFFC62828)
-private val SoonYellow = Color(0xFFF9A825)
+val StatusPaid = Color(0xFF2E7D32)
+val StatusOverdue = Color(0xFFC62828)
+val StatusSoon = Color(0xFFF9A825)
+/** Fallback when a calendar day mixes statuses we cannot segment cleanly. */
+val StatusMixedFallback = Color(0xFF1565C0)
 
 val RowPaidBg = Color(0xFFC8E6C9)
 val RowOverdueBg = Color(0xFFFFCDD2)
@@ -23,9 +25,9 @@ val RowSoonBgDark = Color(0xFF785A00)
 private val LightColors = lightColorScheme(
     primary = Color(0xFF1565C0),
     onPrimary = Color.White,
-    secondary = PaidGreen,
-    tertiary = SoonYellow,
-    error = OverdueRed,
+    secondary = StatusPaid,
+    tertiary = StatusSoon,
+    error = StatusOverdue,
     background = Color(0xFFF7F8FA),
     surface = Color.White,
 )

@@ -31,6 +31,7 @@ object PaymentClone {
 
         val (ny, nm) = PaymentDates.nextMonth(item.dueYear, item.dueMonth)
         val nextDebt = nextDebt(item.debt, item.amount)
+        val cloneAmount = cloneAmount(item.amount, nextDebt)
 
         val duplicate = existing.any {
             PaymentDedup.matches(it, item.title, item.payee, item.dueDay, ny, nm)
@@ -43,7 +44,7 @@ object PaymentClone {
             id = 0L,
             title = item.title,
             payee = item.payee,
-            amount = item.amount,
+            amount = cloneAmount,
             debt = nextDebt,
             dueDay = item.dueDay,
             dueYear = ny,
@@ -65,5 +66,14 @@ object PaymentClone {
     fun nextDebt(debt: Double?, amount: Double): Double? {
         if (debt == null) return null
         return debt - amount
+    }
+
+    /**
+     * Clone payment amount: usual series [amount], unless remaining debt for the
+     * new payment ([nextDebt]) is set and smaller — then amount = remaining.
+     */
+    fun cloneAmount(seriesAmount: Double, nextDebt: Double?): Double {
+        if (nextDebt == null) return seriesAmount
+        return minOf(seriesAmount, nextDebt)
     }
 }

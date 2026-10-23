@@ -55,6 +55,31 @@ class PaymentCloneTest {
         val result = PaymentClone.onTapPaid(item(debt = 250.0, amount = 100.0), emptyList())
         assertTrue(result.createClone)
         assertEquals(150.0, result.clone!!.debt!!, 0.001)
+        assertEquals(100.0, result.clone!!.amount, 0.001)
+    }
+
+    @Test
+    fun unpaidWithDebt_remainingLessThanAmount_clonesWithReducedAmount() {
+        // debt' = 150 − 100 = 50 < amount → last installment amount = debt'
+        val result = PaymentClone.onTapPaid(item(debt = 150.0, amount = 100.0), emptyList())
+        assertTrue(result.createClone)
+        assertEquals(50.0, result.clone!!.debt!!, 0.001)
+        assertEquals(50.0, result.clone!!.amount, 0.001)
+    }
+
+    @Test
+    fun unpaidWithDebt_remainingEqualsAmount_keepsSeriesAmount() {
+        val result = PaymentClone.onTapPaid(item(debt = 200.0, amount = 100.0), emptyList())
+        assertTrue(result.createClone)
+        assertEquals(100.0, result.clone!!.debt!!, 0.001)
+        assertEquals(100.0, result.clone!!.amount, 0.001)
+    }
+
+    @Test
+    fun cloneAmount_capsAtRemainingDebt() {
+        assertEquals(100.0, PaymentClone.cloneAmount(100.0, null), 0.001)
+        assertEquals(100.0, PaymentClone.cloneAmount(100.0, 150.0), 0.001)
+        assertEquals(40.0, PaymentClone.cloneAmount(100.0, 40.0), 0.001)
     }
 
     @Test

@@ -87,7 +87,7 @@ fun MainScreen(viewModel: PaymentsViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Оброки") },
+                title = { Text("Оброки2") },
                 actions = {
                     IconButton(onClick = { dialog = DialogState.Calendar }) {
                         Icon(Icons.Filled.CalendarMonth, contentDescription = "Календарь")
@@ -156,21 +156,21 @@ fun MainScreen(viewModel: PaymentsViewModel) {
                             onDismissRequest = { appMenuOpen = false },
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Создать платёж") },
+                                text = { Text("Создать новый платёж") },
                                 onClick = {
                                     appMenuOpen = false
                                     dialog = DialogState.Create
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Очистить погашенные") },
+                                text = { Text("Очистка") },
                                 onClick = {
                                     appMenuOpen = false
                                     viewModel.clearPaid()
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Функции приложения") },
+                                text = { Text("Инструкция") },
                                 onClick = {
                                     appMenuOpen = false
                                     dialog = DialogState.Tutorial
@@ -210,7 +210,7 @@ fun MainScreen(viewModel: PaymentsViewModel) {
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "Пока нет платежей.\nОткройте меню → «Создать платёж».",
+                    text = "Пока нет платежей.\nОткройте меню → «Создать новый платёж».",
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -245,7 +245,7 @@ fun MainScreen(viewModel: PaymentsViewModel) {
             },
         )
         DialogState.Calendar -> MonthCalendarSheet(
-            paymentDays = viewModel.paymentDaysInCurrentMonth(),
+            dayHighlights = viewModel.paymentDayHighlightsInCurrentMonth(today),
             today = today,
             onDismiss = { dialog = DialogState.None },
         )

@@ -83,10 +83,10 @@ fun PaymentRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            val debtPart = item.debt?.let { " · долг ${SumToPay.formatMoney(it)}" }.orEmpty()
+            val debtPart = item.debt?.let { " · остаток к оплате ${SumToPay.formatMoney(it)}" }.orEmpty()
             Text(
                 text = "${item.effectiveDate.format(dateFmt)}$debtPart",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

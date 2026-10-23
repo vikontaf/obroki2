@@ -15,6 +15,7 @@ import ru.obroki.app.data.ThemePreferences
 import ru.obroki.app.domain.AppThemeMode
 import ru.obroki.app.domain.PaymentDates
 import ru.obroki.app.domain.PaymentItem
+import ru.obroki.app.domain.RowHighlight
 import ru.obroki.app.domain.SumPeriodKind
 import ru.obroki.app.domain.SumToPay
 import java.time.LocalDate
@@ -109,12 +110,15 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
         return SumToPay.calculate(payments.value, from, to)
     }
 
-    fun paymentDaysInCurrentMonth(): Set<Int> {
-        val ym = YearMonth.now()
+    /** Day-of-month → distinct list-row highlights for payments due that day. */
+    fun paymentDayHighlightsInCurrentMonth(today: LocalDate = LocalDate.now()): Map<Int, Set<RowHighlight>> {
+        val ym = YearMonth.from(today)
         return payments.value
             .filter { it.dueYear == ym.year && it.dueMonth == ym.monthValue }
-            .map { it.effectiveDate.dayOfMonth }
-            .toSet()
+            .groupBy { it.effectiveDate.dayOfMonth }
+            .mapValues { (_, items) ->
+                items.map { PaymentDates.rowHighlight(it, today) }.toSet()
+            }
     }
 
     companion object {
