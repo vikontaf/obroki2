@@ -1,6 +1,7 @@
 package ru.obroki.app.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,11 +28,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ru.obroki.app.R
 import ru.obroki.app.domain.PaymentItem
+import ru.obroki.app.domain.TextFormat
 import java.time.YearMonth
 
 @Composable
@@ -53,17 +57,19 @@ fun CreatePaymentDialog(
             Column {
                 OutlinedTextField(
                     value = title,
-                    onValueChange = { title = it },
+                    onValueChange = { title = TextFormat.capitalizeFirstWord(it) },
                     label = { Text("Название") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = payee,
-                    onValueChange = { payee = it },
+                    onValueChange = { payee = TextFormat.capitalizeFirstWord(it) },
                     label = { Text("Получатель") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(8.dp))
@@ -238,7 +244,7 @@ fun TutorialDialog(onDismiss: () -> Unit) {
                     • Короткое нажатие — отметить оплату. Появится платёж на следующий месяц (если нет дубликата и остаток к оплате не исчерпан).
                     • Повторное нажатие на уже отмеченный (оплаченный) пункт возвращает его в неоплаченные; уже созданный платёж на следующий месяц при этом не удаляется.
                     • Долгое нажатие — изменить сумму / остаток к оплате или удалить.
-                    • Календарь — текущий месяц: сегодня и дни с платежами (цвета как в списке).
+                    • Календарь — месяцы вперёд/назад: сегодня и дни с платежами, в том числе запланированные по серии (цвета как в списке).
                     • «Сумма к оплате» — сколько осталось заплатить за выбранный период (включая будущие месяцы).
                     • Очистка — удаляет оплаченные платежи прошлых месяцев.
                     • Цвета: зелёный — оплачен, красный — просрочен, жёлтый — меньше 7 дней.
@@ -314,9 +320,18 @@ fun SumResultDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+        },
         text = {
-            Text("К оплате: ${ru.obroki.app.domain.SumToPay.formatMoney(amount)}")
+            Text(ru.obroki.app.domain.SumToPay.formatMoney(amount))
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("OK") }

@@ -119,4 +119,20 @@ class SumToPayTest {
         assertEquals("1234 ₽", SumToPay.formatMoney(1234.0))
         assertEquals("12.50 ₽", SumToPay.formatMoney(12.5))
     }
+
+    @Test
+    fun dayHighlights_includeProjectedFutureMonth() {
+        val all = listOf(item(amount = 100.0, day = 10, month = 10, year = 2026, debt = null))
+        val today = LocalDate.of(2026, 10, 23)
+        val nov = SumToPay.dayHighlightsForMonth(all, java.time.YearMonth.of(2026, 11), today)
+        assertEquals(setOf(RowHighlight.NONE), nov[10])
+    }
+
+    @Test
+    fun capitalizeFirstWord_russian() {
+        assertEquals("Аренда", TextFormat.capitalizeFirstWord("аренда"))
+        assertEquals("Аренда жилья", TextFormat.capitalizeFirstWord("аренда жилья"))
+        assertEquals("ЖКХ", TextFormat.capitalizeFirstWord("ЖКХ"))
+        assertEquals("  Плата", TextFormat.capitalizeFirstWord("  плата"))
+    }
 }

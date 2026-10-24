@@ -11,12 +11,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -45,12 +54,13 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonthCalendarSheet(
-    /** Day-of-month → distinct row highlights for payments due that day. */
-    dayHighlights: Map<Int, Set<RowHighlight>>,
+    /** Highlights for the currently displayed [YearMonth]. */
+    dayHighlightsFor: (YearMonth) -> Map<Int, Set<RowHighlight>>,
     today: LocalDate = LocalDate.now(),
     onDismiss: () -> Unit,
 ) {
-    val ym = YearMonth.from(today)
+    var ym by remember { mutableStateOf(YearMonth.from(today)) }
+    val dayHighlights = remember(ym) { dayHighlightsFor(ym) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val locale = Locale("ru")
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -65,12 +75,32 @@ fun MonthCalendarSheet(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp),
         ) {
-            Text(
-                text = ym.month.getDisplayName(TextStyle.FULL_STANDALONE, locale)
-                    .replaceFirstChar { it.titlecase(locale) } + " ${ym.year}",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = { ym = ym.minusMonths(1) }) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = "Предыдущий месяц",
+                    )
+                }
+                Text(
+                    text = ym.month.getDisplayName(TextStyle.FULL_STANDALONE, locale)
+                        .replaceFirstChar { it.titlecase(locale) } + " ${ym.year}",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = { ym = ym.plusMonths(1) }) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Следующий месяц",
+                    )
+                }
+            }
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 listOf("пн", "вт", "ср", "чт", "пт", "сб", "вс").forEach { d ->
@@ -123,13 +153,6 @@ fun MonthCalendarSheet(
                     }
                 }
             }
-
-            Text(
-                text = "Обводка — сегодня · цвет дня — статус платежа (сегменты при нескольких)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 12.dp),
-            )
         }
     }
 }
@@ -209,13 +232,16 @@ private fun CalendarDayCell(
 
 /**
  * Status colors for a calendar day, matching list row highlights.
- * Multiple distinct statuses → one color each (segmented). NONE ignored.
- * If somehow empty after filtering but caller passed mixed unknowns → blue fallback unused here.
+ * Includes NONE so projected / far unpaid days still get a mark.
  */
 private fun calendarStatusColors(highlights: Set<RowHighlight>, dark: Boolean): List<Color> {
-    val ordered = listOf(RowHighlight.PAID, RowHighlight.OVERDUE, RowHighlight.SOON)
-        .filter { it in highlights }
-    if (ordered.isEmpty()) return emptyList()
+    if (highlights.isEmpty()) return emptyList()
+    val ordered = listOf(
+        RowHighlight.PAID,
+        RowHighlight.OVERDUE,
+        RowHighlight.SOON,
+        RowHighlight.NONE,
+    ).filter { it in highlights }
     return ordered.map { highlightColor(it, dark) }
 }
 

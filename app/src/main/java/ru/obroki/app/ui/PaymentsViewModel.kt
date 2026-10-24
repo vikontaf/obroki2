@@ -18,6 +18,7 @@ import ru.obroki.app.domain.PaymentItem
 import ru.obroki.app.domain.RowHighlight
 import ru.obroki.app.domain.SumPeriodKind
 import ru.obroki.app.domain.SumToPay
+import ru.obroki.app.domain.TextFormat
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -61,8 +62,8 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             repo.create(
                 PaymentItem(
-                    title = title.trim(),
-                    payee = payee.trim(),
+                    title = TextFormat.capitalizeFirstWord(title.trim()),
+                    payee = TextFormat.capitalizeFirstWord(payee.trim()),
                     amount = amount,
                     debt = debt,
                     dueDay = day,
@@ -118,16 +119,11 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
         return SumToPay.calculate(payments.value, from, to)
     }
 
-    /** Day-of-month → distinct list-row highlights for payments due that day. */
-    fun paymentDayHighlightsInCurrentMonth(today: LocalDate = LocalDate.now()): Map<Int, Set<RowHighlight>> {
-        val ym = YearMonth.from(today)
-        return payments.value
-            .filter { it.dueYear == ym.year && it.dueMonth == ym.monthValue }
-            .groupBy { it.effectiveDate.dayOfMonth }
-            .mapValues { (_, items) ->
-                items.map { PaymentDates.rowHighlight(it, today) }.toSet()
-            }
-    }
+    /** Day-of-month → highlights for [ym], including projected unpaid series. */
+    fun paymentDayHighlights(
+        ym: YearMonth,
+        today: LocalDate = LocalDate.now(),
+    ): Map<Int, Set<RowHighlight>> = SumToPay.dayHighlightsForMonth(payments.value, ym, today)
 
     companion object {
         fun themeLabel(mode: AppThemeMode): String = when (mode) {

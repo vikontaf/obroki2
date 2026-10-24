@@ -35,7 +35,11 @@ object PaymentDates {
 
     fun rowHighlight(item: PaymentItem, today: LocalDate): RowHighlight {
         if (item.isPaid) return RowHighlight.PAID
-        val due = item.effectiveDate
+        return rowHighlightUnpaid(item.effectiveDate, today)
+    }
+
+    /** Highlight for an unpaid due date (real or projected). */
+    fun rowHighlightUnpaid(due: LocalDate, today: LocalDate): RowHighlight {
         if (due.isBefore(today)) return RowHighlight.OVERDUE
         val days = daysUntil(today, due)
         if (days in 0..6) return RowHighlight.SOON

@@ -1,7 +1,9 @@
 package ru.obroki.app.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +25,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -95,7 +99,15 @@ fun MainScreen(viewModel: PaymentsViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Оброки2") },
+                title = {
+                    Text(
+                        text = "Оброки 2",
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
                 actions = {
                     IconButton(onClick = { dialog = DialogState.Calendar }) {
                         Icon(Icons.Filled.CalendarMonth, contentDescription = "Календарь")
@@ -111,7 +123,11 @@ fun MainScreen(viewModel: PaymentsViewModel) {
                             Text(
                                 text = "Сумма к оплате",
                                 style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
@@ -253,7 +269,7 @@ fun MainScreen(viewModel: PaymentsViewModel) {
             },
         )
         DialogState.Calendar -> MonthCalendarSheet(
-            dayHighlights = viewModel.paymentDayHighlightsInCurrentMonth(today),
+            dayHighlightsFor = { ym -> viewModel.paymentDayHighlights(ym, today) },
             today = today,
             onDismiss = { dialog = DialogState.None },
         )

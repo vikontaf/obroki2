@@ -162,4 +162,62 @@ object SumToPay {
         }
         return "$number ₽"
     }
+
+    /**
+     * Day-of-month → highlights for a calendar month: real DB rows plus
+     * projected unpaid instances of still-active series (same rules as [calculate]).
+     */
+    fun dayHighlightsForMonth(
+        all: List<PaymentItem>,
+        ym: YearMonth,
+        today: LocalDate = LocalDate.now(),
+    ): Map<Int, Set<RowHighlight>> {
+        val result = mutableMapOf<Int, MutableSet<RowHighlight>>()
+
+        fun add(day: Int, highlight: RowHighlight) {
+            result.getOrPut(day) { mutableSetOf() }.add(highlight)
+        }
+
+        for (item in all) {
+            if (item.dueYear != ym.year || item.dueMonth != ym.monthValue) continue
+            add(item.effectiveDate.dayOfMonth, PaymentDates.rowHighlight(item, today))
+        }
+
+        for (series in collectActiveSeries(all)) {
+            var cursor = YearMonth.of(series.lastYear, series.lastMonth).plusMonths(1)
+            var remainingDebt = series.debtAfterLast
+
+            while (true) {
+                if (remainingDebt != null) {
+                    val nextDebt = remainingDebt - series.amount
+                    if (nextDebt <= 0.0) break
+                }
+
+                if (cursor.isAfter(ym)) break
+
+                val existsInDb = all.any {
+                    PaymentDedup.matches(
+                        it,
+                        series.title,
+                        series.payee,
+                        series.dueDay,
+                        cursor.year,
+                        cursor.monthValue,
+                    )
+                }
+
+                if (!existsInDb && cursor == ym) {
+                    val eff = PaymentDates.effectiveDate(cursor.year, cursor.monthValue, series.dueDay)
+                    add(eff.dayOfMonth, PaymentDates.rowHighlightUnpaid(eff, today))
+                }
+
+                if (remainingDebt != null) {
+                    remainingDebt -= series.amount
+                }
+                cursor = cursor.plusMonths(1)
+            }
+        }
+
+        return result
+    }
 }

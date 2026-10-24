@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
@@ -21,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ru.obroki.app.domain.PaymentDates
@@ -87,7 +89,7 @@ fun PaymentRow(
             )
             item.debt?.let { debt ->
                 Text(
-                    text = "остаток к оплате ${SumToPay.formatMoney(debt)}",
+                    text = SumToPay.formatMoney(debt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -95,17 +97,26 @@ fun PaymentRow(
                 )
             }
         }
+        // amount | date (date rightmost); intrinsic width so title ellipsis absorbs overflow
         Text(
-            text = item.effectiveDate.format(dateFmt),
+            text = SumToPay.formatMoney(item.amount),
             style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            softWrap = false,
+            textAlign = TextAlign.End,
+            modifier = Modifier.widthIn(min = 56.dp),
         )
         VerticalDivider(
             modifier = Modifier.height(28.dp),
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
         )
         Text(
-            text = SumToPay.formatMoney(item.amount),
+            text = item.effectiveDate.format(dateFmt),
             style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            softWrap = false,
+            textAlign = TextAlign.End,
+            modifier = Modifier.widthIn(min = 52.dp),
         )
     }
 }
