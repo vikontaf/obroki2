@@ -13,8 +13,11 @@ import ru.obroki.app.data.AppDatabase
 import ru.obroki.app.data.PaymentRepository
 import ru.obroki.app.data.ThemePreferences
 import ru.obroki.app.domain.AppThemeMode
+import ru.obroki.app.domain.IncomeProjection
+import ru.obroki.app.domain.IncomeReceipt
 import ru.obroki.app.domain.PaymentDates
 import ru.obroki.app.domain.PaymentItem
+import ru.obroki.app.domain.PeriodTotals
 import ru.obroki.app.domain.RowHighlight
 import ru.obroki.app.domain.SumPeriodKind
 import ru.obroki.app.domain.SumToPay
@@ -38,6 +41,12 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
     val tutorialShown: StateFlow<Boolean> = themePrefs.tutorialShown
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
+    val balance: StateFlow<Double> = themePrefs.balance
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
+
+    val incomeSchedule: StateFlow<List<IncomeReceipt>> = themePrefs.incomeSchedule
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     private val _message = MutableStateFlow<UiMessage?>(null)
     val message: StateFlow<UiMessage?> = _message.asStateFlow()
 
@@ -47,6 +56,14 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
 
     fun markTutorialShown() {
         viewModelScope.launch { themePrefs.setTutorialShown() }
+    }
+
+    fun setBalance(value: Double) {
+        viewModelScope.launch { themePrefs.setBalance(value) }
+    }
+
+    fun setIncomeSchedule(receipts: List<IncomeReceipt>) {
+        viewModelScope.launch { themePrefs.setIncomeSchedule(receipts) }
     }
 
     fun createPayment(
@@ -104,9 +121,9 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun sumForPeriod(kind: SumPeriodKind, customTo: LocalDate? = null): Double {
+    fun periodRange(kind: SumPeriodKind, customTo: LocalDate? = null): Pair<LocalDate, LocalDate> {
         val today = LocalDate.now()
-        val (from, to) = when (kind) {
+        return when (kind) {
             SumPeriodKind.NEXT_WEEK -> PaymentDates.periodNextWeek(today)
             SumPeriodKind.NEXT_MONTH -> PaymentDates.periodNextMonth(today)
             SumPeriodKind.UNTIL_WEEK_END -> PaymentDates.periodUntilWeekEnd(today)
@@ -116,8 +133,22 @@ class PaymentsViewModel(application: Application) : AndroidViewModel(application
                 PaymentDates.periodUntilCustom(today, end)
             }
         }
-        return SumToPay.calculate(payments.value, from, to)
     }
+
+    fun totalsForPeriod(kind: SumPeriodKind, customTo: LocalDate? = null): PeriodTotals {
+        val (from, to) = periodRange(kind, customTo)
+        val expenses = SumToPay.calculate(payments.value, from, to)
+        val income = IncomeProjection.calculate(incomeSchedule.value, from, to)
+        return PeriodTotals(
+            expenses = expenses,
+            income = income,
+            balance = balance.value,
+        )
+    }
+
+    /** Expenses only — kept for tests / callers that need the bare sum. */
+    fun sumForPeriod(kind: SumPeriodKind, customTo: LocalDate? = null): Double =
+        totalsForPeriod(kind, customTo).expenses
 
     /** Day-of-month → highlights for [ym], including projected unpaid series. */
     fun paymentDayHighlights(

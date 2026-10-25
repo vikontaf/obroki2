@@ -42,3 +42,19 @@ enum class SumPeriodKind {
     UNTIL_MONTH_END,
     UNTIL_CUSTOM_DATE,
 }
+
+/** One scheduled monthly income receipt on a day of month (1–31). */
+data class IncomeReceipt(
+    val dayOfMonth: Int,
+    val amount: Double,
+)
+
+/** Totals for «Сумма к оплате» result dialog. */
+data class PeriodTotals(
+    val expenses: Double,
+    val income: Double,
+    val balance: Double,
+) {
+    /** Остаток + доход − расходы. */
+    val total: Double get() = balance + income - expenses
+}

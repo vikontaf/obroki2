@@ -2,13 +2,17 @@ package ru.obroki.app.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -34,7 +38,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ru.obroki.app.R
+import ru.obroki.app.domain.IncomeReceipt
 import ru.obroki.app.domain.PaymentItem
+import ru.obroki.app.domain.PeriodTotals
+import ru.obroki.app.domain.SumToPay
 import ru.obroki.app.domain.TextFormat
 import java.time.YearMonth
 
@@ -245,7 +252,9 @@ fun TutorialDialog(onDismiss: () -> Unit) {
                     • Повторное нажатие на уже отмеченный (оплаченный) пункт возвращает его в неоплаченные; уже созданный платёж на следующий месяц при этом не удаляется.
                     • Долгое нажатие — изменить сумму / остаток к оплате или удалить.
                     • Календарь — месяцы вперёд/назад: сегодня и дни с платежами, в том числе запланированные по серии (цвета как в списке).
-                    • «Сумма к оплате» — сколько осталось заплатить за выбранный период (включая будущие месяцы).
+                    • «Сумма к оплате» — расходы, доход за период, остаток средств и итог (включая будущие месяцы).
+                    • Остаток средств в шапке — нажмите, чтобы изменить; учитывается в итоге «Сумма к оплате».
+                    • «Установить ежемесячный доход» — дни месяца и суммы поступлений для расчёта дохода за период.
                     • Очистка — удаляет оплаченные платежи прошлых месяцев.
                     • Цвета: зелёный — оплачен, красный — просрочен, жёлтый — меньше 7 дней.
                     """.trimIndent()
@@ -315,7 +324,7 @@ fun DonateStubDialog(onDismiss: () -> Unit) {
 @Composable
 fun SumResultDialog(
     title: String,
-    amount: Double,
+    totals: PeriodTotals,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -331,10 +340,244 @@ fun SumResultDialog(
             )
         },
         text = {
-            Text(ru.obroki.app.domain.SumToPay.formatMoney(amount))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                SumLine(label = "Расходы", value = totals.expenses)
+                Spacer(Modifier.height(6.dp))
+                SumLine(label = "Доход", value = totals.income)
+                Spacer(Modifier.height(6.dp))
+                SumLine(label = "Остаток средств", value = totals.balance)
+                Spacer(Modifier.height(10.dp))
+                SumLine(label = "Итог", value = totals.total, emphasize = true)
+            }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("OK") }
+        },
+    )
+}
+
+@Composable
+private fun SumLine(label: String, value: Double, emphasize: Boolean = false) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            fontWeight = if (emphasize) FontWeight.Bold else FontWeight.Normal,
+            style = if (emphasize) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
+        )
+        Text(
+            text = SumToPay.formatMoney(value),
+            fontWeight = if (emphasize) FontWeight.Bold else FontWeight.Normal,
+            style = if (emphasize) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
+        )
+    }
+}
+
+@Composable
+fun EditBalanceDialog(
+    currentBalance: Double,
+    onDismiss: () -> Unit,
+    onSave: (Double) -> Unit,
+) {
+    var balanceText by remember {
+        mutableStateOf(
+            if (currentBalance == currentBalance.toLong().toDouble()) {
+                currentBalance.toLong().toString()
+            } else {
+                currentBalance.toString()
+            },
+        )
+    }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    fun applyDelta(delta: Double) {
+        val current = balanceText.replace(',', '.').toDoubleOrNull() ?: 0.0
+        val next = current + delta
+        balanceText = if (next == next.toLong().toDouble()) {
+            next.toLong().toString()
+        } else {
+            next.toString()
+        }
+        error = null
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Остаток средств") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = balanceText,
+                    onValueChange = {
+                        balanceText = it
+                        error = null
+                    },
+                    label = { Text("Сумма") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    TextButton(onClick = { applyDelta(1000.0) }) { Text("+1000") }
+                    TextButton(onClick = { applyDelta(-1000.0) }) { Text("-1000") }
+                    TextButton(onClick = { applyDelta(5000.0) }) { Text("+5000") }
+                    TextButton(onClick = { applyDelta(-5000.0) }) { Text("-5000") }
+                }
+                if (error != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(error!!, color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val value = balanceText.replace(',', '.').toDoubleOrNull()
+                if (value == null) {
+                    error = "Введите число"
+                } else {
+                    onSave(value)
+                }
+            }) { Text("Сохранить") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Отмена") }
+        },
+    )
+}
+
+@Composable
+fun MonthlyIncomeDialog(
+    initial: List<IncomeReceipt>,
+    onDismiss: () -> Unit,
+    onSave: (List<IncomeReceipt>) -> Unit,
+) {
+    data class DraftRow(val dayText: String, val amountText: String)
+
+    var rows by remember {
+        mutableStateOf(
+            if (initial.isEmpty()) {
+                listOf(DraftRow("", ""))
+            } else {
+                initial.map {
+                    DraftRow(
+                        dayText = it.dayOfMonth.toString(),
+                        amountText = if (it.amount == it.amount.toLong().toDouble()) {
+                            it.amount.toLong().toString()
+                        } else {
+                            it.amount.toString()
+                        },
+                    )
+                }
+            },
+        )
+    }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scroll = rememberScrollState()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Ежемесячный доход") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(scroll),
+            ) {
+                Text(
+                    text = "Укажите день месяца и сумму поступления. Можно несколько строк.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                rows.forEachIndexed { index, row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OutlinedTextField(
+                            value = row.dayText,
+                            onValueChange = { value ->
+                                rows = rows.toMutableList().also {
+                                    it[index] = row.copy(dayText = value)
+                                }
+                                error = null
+                            },
+                            label = { Text("День") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.width(88.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        OutlinedTextField(
+                            value = row.amountText,
+                            onValueChange = { value ->
+                                rows = rows.toMutableList().also {
+                                    it[index] = row.copy(amountText = value)
+                                }
+                                error = null
+                            },
+                            label = { Text("Сумма") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            onClick = {
+                                rows = rows.toMutableList().also { it.removeAt(index) }
+                                    .ifEmpty { listOf(DraftRow("", "")) }
+                                error = null
+                            },
+                        ) { Text("×") }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                TextButton(
+                    onClick = {
+                        rows = rows + DraftRow("", "")
+                        error = null
+                    },
+                ) { Text("Добавить") }
+                if (error != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(error!!, color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val parsed = mutableListOf<IncomeReceipt>()
+                for (row in rows) {
+                    val dayBlank = row.dayText.isBlank()
+                    val amountBlank = row.amountText.isBlank()
+                    if (dayBlank && amountBlank) continue
+                    val day = row.dayText.toIntOrNull()
+                    val amount = row.amountText.replace(',', '.').toDoubleOrNull()
+                    when {
+                        day == null || day !in 1..31 -> {
+                            error = "День месяца: 1–31"
+                            return@TextButton
+                        }
+                        amount == null || amount <= 0.0 -> {
+                            error = "Сумма должна быть больше 0"
+                            return@TextButton
+                        }
+                        else -> parsed.add(IncomeReceipt(dayOfMonth = day, amount = amount))
+                    }
+                }
+                onSave(parsed.sortedBy { it.dayOfMonth })
+            }) { Text("Сохранить") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Отмена") }
         },
     )
 }

@@ -1,6 +1,7 @@
 package ru.obroki.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,14 +41,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.obroki.app.domain.PaymentItem
+import ru.obroki.app.domain.PeriodTotals
 import ru.obroki.app.domain.SumPeriodKind
+import ru.obroki.app.domain.SumToPay
 import ru.obroki.app.ui.PaymentsViewModel
 import ru.obroki.app.ui.components.ConfirmDeleteDialog
 import ru.obroki.app.ui.components.CreatePaymentDialog
 import ru.obroki.app.ui.components.DonateStubDialog
+import ru.obroki.app.ui.components.EditBalanceDialog
 import ru.obroki.app.ui.components.EditPaymentDialog
 import ru.obroki.app.ui.components.ItemActionsDialog
 import ru.obroki.app.ui.components.MonthCalendarSheet
+import ru.obroki.app.ui.components.MonthlyIncomeDialog
 import ru.obroki.app.ui.components.PaymentRow
 import ru.obroki.app.ui.components.SumResultDialog
 import ru.obroki.app.ui.components.TutorialDialog
@@ -62,10 +67,12 @@ private sealed class DialogState {
     data object Tutorial : DialogState()
     data object Donate : DialogState()
     data object CustomDatePicker : DialogState()
+    data object EditBalance : DialogState()
+    data object MonthlyIncome : DialogState()
     data class ItemActions(val item: PaymentItem) : DialogState()
     data class Edit(val item: PaymentItem) : DialogState()
     data class ConfirmDelete(val item: PaymentItem) : DialogState()
-    data class SumResult(val title: String, val amount: Double) : DialogState()
+    data class SumResult(val title: String, val totals: PeriodTotals) : DialogState()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +81,8 @@ fun MainScreen(viewModel: PaymentsViewModel) {
     val payments by viewModel.payments.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val tutorialShown by viewModel.tutorialShown.collectAsStateWithLifecycle()
+    val balance by viewModel.balance.collectAsStateWithLifecycle()
+    val incomeSchedule by viewModel.incomeSchedule.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
 
     var dialog by remember { mutableStateOf<DialogState>(DialogState.None) }
@@ -109,6 +118,14 @@ fun MainScreen(viewModel: PaymentsViewModel) {
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 ),
                 actions = {
+                    Text(
+                        text = SumToPay.formatMoney(balance),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier
+                            .clickable { dialog = DialogState.EditBalance }
+                            .padding(horizontal = 8.dp, vertical = 12.dp),
+                    )
                     IconButton(onClick = { dialog = DialogState.Calendar }) {
                         Icon(Icons.Filled.CalendarMonth, contentDescription = "Календарь")
                     }
@@ -134,32 +151,32 @@ fun MainScreen(viewModel: PaymentsViewModel) {
                                 text = { Text("Ближайшая неделя") },
                                 onClick = {
                                     sumMenuOpen = false
-                                    val amount = viewModel.sumForPeriod(SumPeriodKind.NEXT_WEEK)
-                                    dialog = DialogState.SumResult("Ближайшая неделя", amount)
+                                    val totals = viewModel.totalsForPeriod(SumPeriodKind.NEXT_WEEK)
+                                    dialog = DialogState.SumResult("Ближайшая неделя", totals)
                                 },
                             )
                             DropdownMenuItem(
                                 text = { Text("Ближайший месяц") },
                                 onClick = {
                                     sumMenuOpen = false
-                                    val amount = viewModel.sumForPeriod(SumPeriodKind.NEXT_MONTH)
-                                    dialog = DialogState.SumResult("Ближайший месяц", amount)
+                                    val totals = viewModel.totalsForPeriod(SumPeriodKind.NEXT_MONTH)
+                                    dialog = DialogState.SumResult("Ближайший месяц", totals)
                                 },
                             )
                             DropdownMenuItem(
                                 text = { Text("До конца текущей недели") },
                                 onClick = {
                                     sumMenuOpen = false
-                                    val amount = viewModel.sumForPeriod(SumPeriodKind.UNTIL_WEEK_END)
-                                    dialog = DialogState.SumResult("До конца текущей недели", amount)
+                                    val totals = viewModel.totalsForPeriod(SumPeriodKind.UNTIL_WEEK_END)
+                                    dialog = DialogState.SumResult("До конца текущей недели", totals)
                                 },
                             )
                             DropdownMenuItem(
                                 text = { Text("До конца текущего месяца") },
                                 onClick = {
                                     sumMenuOpen = false
-                                    val amount = viewModel.sumForPeriod(SumPeriodKind.UNTIL_MONTH_END)
-                                    dialog = DialogState.SumResult("До конца текущего месяца", amount)
+                                    val totals = viewModel.totalsForPeriod(SumPeriodKind.UNTIL_MONTH_END)
+                                    dialog = DialogState.SumResult("До конца текущего месяца", totals)
                                 },
                             )
                             DropdownMenuItem(
@@ -184,6 +201,13 @@ fun MainScreen(viewModel: PaymentsViewModel) {
                                 onClick = {
                                     appMenuOpen = false
                                     dialog = DialogState.Create
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Установить ежемесячный доход") },
+                                onClick = {
+                                    appMenuOpen = false
+                                    dialog = DialogState.MonthlyIncome
                                 },
                             )
                             DropdownMenuItem(
@@ -280,6 +304,22 @@ fun MainScreen(viewModel: PaymentsViewModel) {
             },
         )
         DialogState.Donate -> DonateStubDialog(onDismiss = { dialog = DialogState.None })
+        DialogState.EditBalance -> EditBalanceDialog(
+            currentBalance = balance,
+            onDismiss = { dialog = DialogState.None },
+            onSave = { value ->
+                viewModel.setBalance(value)
+                dialog = DialogState.None
+            },
+        )
+        DialogState.MonthlyIncome -> MonthlyIncomeDialog(
+            initial = incomeSchedule,
+            onDismiss = { dialog = DialogState.None },
+            onSave = { receipts ->
+                viewModel.setIncomeSchedule(receipts)
+                dialog = DialogState.None
+            },
+        )
         is DialogState.ItemActions -> ItemActionsDialog(
             item = d.item,
             onDismiss = { dialog = DialogState.None },
@@ -304,7 +344,7 @@ fun MainScreen(viewModel: PaymentsViewModel) {
         )
         is DialogState.SumResult -> SumResultDialog(
             title = d.title,
-            amount = d.amount,
+            totals = d.totals,
             onDismiss = { dialog = DialogState.None },
         )
         DialogState.CustomDatePicker -> {
@@ -321,13 +361,13 @@ fun MainScreen(viewModel: PaymentsViewModel) {
                                 val selected = Instant.ofEpochMilli(millis)
                                     .atZone(ZoneOffset.UTC)
                                     .toLocalDate()
-                                val amount = viewModel.sumForPeriod(
+                                val totals = viewModel.totalsForPeriod(
                                     SumPeriodKind.UNTIL_CUSTOM_DATE,
                                     selected,
                                 )
                                 dialog = DialogState.SumResult(
                                     "До ${selected}",
-                                    amount,
+                                    totals,
                                 )
                             } else {
                                 dialog = DialogState.None
