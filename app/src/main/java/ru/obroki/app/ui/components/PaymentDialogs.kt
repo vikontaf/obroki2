@@ -120,7 +120,7 @@ fun CreatePaymentDialog(
                 when {
                     title.isBlank() -> error = "Укажите название"
                     payee.isBlank() -> error = "Укажите получателя"
-                    amount == null || amount <= 0 -> error = "Сумма должна быть больше 0"
+                    amount == null || amount < 0 -> error = "Сумма не может быть отрицательной"
                     debtText.isNotBlank() && (debt == null || debt < 0) -> error = "Некорректный остаток к оплате"
                     day == null || day !in 1..31 -> error = "День месяца: 1–31"
                     else -> onSave(title, payee, amount, debt, day)
@@ -179,7 +179,7 @@ fun EditPaymentDialog(
                 val debtRaw = debtText.trim()
                 val debt = if (debtRaw.isEmpty()) null else debtRaw.replace(',', '.').toDoubleOrNull()
                 when {
-                    amount == null || amount <= 0 -> error = "Сумма должна быть больше 0"
+                    amount == null || amount < 0 -> error = "Сумма не может быть отрицательной"
                     debtRaw.isNotEmpty() && (debt == null || debt < 0) -> error = "Некорректный остаток к оплате"
                     else -> onSave(amount, debt)
                 }
